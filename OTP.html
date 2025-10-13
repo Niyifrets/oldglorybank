@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Glory Bank | Verify Identity</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), 
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="%23173f71"/><rect width="1200" height="400" fill="%23c62828"/><g fill="%23ffffff" opacity="0.1"><circle cx="200" cy="150" r="80"/><circle cx="500" cy="300" r="120"/><circle cx="800" cy="200" r="90"/><circle cx="300" cy="500" r="110"/><circle cx="700" cy="600" r="70"/><circle cx="1000" cy="400" r="100"/></g></svg>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            filter: blur(0.3px);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(19,24,33,0.15);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            border: 1px solid #e6e6e6;
+        }
+
+        .logo-container {
+            margin-bottom: 30px;
+        }
+
+        .bank-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            border: 3px solid #f0f0f0;
+            box-shadow: 0 8px 20px rgba(23,63,113,0.2);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+
+        .logo-image {
+            width: 300%;
+            height: 300%;
+            object-fit: contain;
+            padding: 15px;
+        }
+
+        h1 {
+            color: #173f71;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7a7a7a;
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .otp-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .otp-input {
+            width: 60px;
+            height: 70px;
+            border: 2px solid #e6e6e6;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: #173f71;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .otp-input:focus {
+            border-color: #173f71;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(23,63,113,0.1);
+            outline: none;
+            transform: translateY(-2px);
+        }
+
+        .otp-input.filled {
+            border-color: #9b1720;
+            background: #fff5f5;
+        }
+
+        .verify-btn {
+            background: linear-gradient(135deg, #9b1720 0%, #c62828 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .verify-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(155,23,32,0.3);
+        }
+
+        .verify-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .resend-text {
+            color: #7a7a7a;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .resend-link {
+            color: #173f71;
+            background: none;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.3s ease;
+        }
+
+        .resend-link:hover {
+            color: #9b1720;
+        }
+
+        .timer {
+            color: #9b1720;
+            font-weight: 700;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .security-notice {
+            background: #f8f9fa;
+            border: 1px solid #e6e6e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 25px;
+            text-align: left;
+        }
+
+        .security-notice h3 {
+            color: #173f71;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .security-notice p {
+            color: #7a7a7a;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .back-link {
+            color: #173f71;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #9b1720;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 25px;
+            }
+            
+            .otp-input {
+                width: 50px;
+                height: 60px;
+                font-size: 24px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .bank-logo {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <div class="bank-logo">
+                <img src="images/footerlogo.webp" class="logo-image" alt="Old Glory Bank Logo">
+            </div>
+        </div>
+
+        <h1>Verify Your Identity</h1>
+        <p class="subtitle">
+            We've sent a 4-digit verification code to your registered device.<br>
+            Please enter it below to continue.
+        </p>
+
+        <div class="otp-container">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        </div>
+
+        <button class="verify-btn" id="verifyBtn" disabled>
+            Verify & Continue
+        </button>
+
+        <div class="resend-text">
+            Didn't receive the code?
+        </div>
+        <button class="resend-link" id="resendBtn">
+            Resend Code
+        </button>
+        <div class="timer" id="timer">
+            (00:60)
+        </div>
+
+        <div class="security-notice">
+            <h3>🔒 Security Notice</h3>
+            <p>This code expires in 10 minutes. Never share your verification code with anyone. Old Glory Bank will never ask for this code via phone or email.</p>
+        </div>
+
+        <a href="index.html" class="back-link">
+            ← Back to Login
+        </a>
+    </div>
+
+    <script>
+    // Valid OTP codes - 20 hard-to-guess numeric codes
+    const validOTPCodes = [
+        '7294', '5831', '4167', '9628', '3750',
+        '8419', '2573', '6904', '1385', '7942',
+        '5268', '9037', '4716', '8259', '3641',
+        '6982', '1437', '5803', '9274', '3168'
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resendBtn = document.getElementById('resendBtn');
+        const timer = document.getElementById('timer');
+        
+        let countdown = 60;
+        let countdownInterval;
+
+        // Start the countdown timer
+        function startTimer() {
+            countdown = 60;
+            resendBtn.disabled = true;
+            timer.textContent = `(00:${countdown.toString().padStart(2, '0')})`;
+            
+            countdownInterval = setInterval(() => {
+                countdown--;
+                timer.textContent = `(00:${countdown.toString().padStart(2, '0')})`;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    resendBtn.disabled = false;
+                    timer.textContent = '';
+                }
+            }, 1000);
+        }
+
+        // OTP input handling
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                
+                // Only allow numbers
+                if (value && !/^\d$/.test(value)) {
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Auto-focus next input
+                if (value && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+                
+                // Update filled state
+                e.target.classList.toggle('filled', value !== '');
+                
+                // Check if all inputs are filled
+                checkOTPComplete();
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                // Handle backspace
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+                
+                // Handle paste
+                if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+                    setTimeout(() => {
+                        handlePaste(e.target);
+                    }, 0);
+                }
+            });
+            
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                handlePaste(e.target);
+            });
+        });
+
+        function handlePaste(target) {
+            const pastedData = (event.clipboardData || window.clipboardData).getData('text');
+            const numbers = pastedData.replace(/\D/g, '').slice(0, 4);
+            
+            numbers.split('').forEach((num, index) => {
+                if (otpInputs[index]) {
+                    otpInputs[index].value = num;
+                    otpInputs[index].classList.add('filled');
+                }
+            });
+            
+            if (numbers.length === 4) {
+                otpInputs[3].focus();
+            } else if (numbers.length > 0) {
+                otpInputs[numbers.length - 1].focus();
+            }
+            
+            checkOTPComplete();
+        }
+
+        function checkOTPComplete() {
+            const allFilled = Array.from(otpInputs).every(input => input.value !== '');
+            verifyBtn.disabled = !allFilled;
+        }
+
+        // Verify button handler
+        verifyBtn.addEventListener('click', function() {
+            const otp = Array.from(otpInputs).map(input => input.value).join('');
+            
+            if (otp.length === 4) {
+                // Show loading state
+                verifyBtn.innerHTML = '<span class="loading"></span> Verifying...';
+                verifyBtn.disabled = true;
+                
+                // Simulate verification process
+                setTimeout(() => {
+                    // Check if OTP is valid
+                    if (validOTPCodes.includes(otp)) {
+                        // Mark OTP as verified in session storage
+                        sessionStorage.setItem('otpVerified', 'true');
+                        
+                        // Show success message
+                        showCustomAlert('Verification successful! Opening dashboard and closing this window...', 'success');
+                        
+                        // Open dashboard in NEW tab and close this OTP tab after short delay
+                        setTimeout(() => {
+                            // Open dashboard in new tab
+                            window.open('dashboard.html', '_blank');
+                            
+                            // Close this OTP tab
+                            window.close();
+                        }, 1500);
+                    } else {
+                        // Invalid OTP - reset and allow retry
+                        verifyBtn.innerHTML = 'Verify & Continue';
+                        verifyBtn.disabled = false;
+                        
+                        // Clear inputs and refocus first one
+                        otpInputs.forEach(input => {
+                            input.value = '';
+                            input.classList.remove('filled');
+                        });
+                        otpInputs[0].focus();
+                        
+                        // Show custom error message
+                        showCustomAlert('Invalid verification code. Please try again.', 'error');
+                    }
+                }, 1500);
+            }
+        });
+
+        // Resend button handler
+        resendBtn.addEventListener('click', function() {
+            // Clear all inputs
+            otpInputs.forEach(input => {
+                input.value = '';
+                input.classList.remove('filled');
+            });
+            
+            // Reset focus to first input
+            otpInputs[0].focus();
+            verifyBtn.disabled = true;
+            
+            // Show sending message
+            resendBtn.textContent = 'Sending...';
+            resendBtn.disabled = true;
+            
+            // Simulate sending new code
+            setTimeout(() => {
+                resendBtn.textContent = 'Resend Code';
+                startTimer();
+                showCustomAlert('New verification code sent!', 'success');
+            }, 1500);
+        });
+
+        // Custom alert function for OTP page
+        function showCustomAlert(message, type = 'info') {
+            // Remove existing alert if any
+            const existingAlert = document.querySelector('.custom-alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // Create alert element
+            const alert = document.createElement('div');
+            alert.className = `custom-alert custom-alert-${type}`;
+            alert.innerHTML = `
+                <div class="custom-alert-content">
+                    <span class="custom-alert-message">${message}</span>
+                    <button class="custom-alert-close">&times;</button>
+                </div>
+            `;
+
+            // Add styles if not already added
+            if (!document.querySelector('#custom-alert-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'custom-alert-styles';
+                styles.textContent = `
+                    .custom-alert {
+                        position: fixed;
+                        top: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        z-index: 10000;
+                        min-width: 300px;
+                        max-width: 500px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        animation: slideDown 0.3s ease;
+                    }
+
+                    .custom-alert-success {
+                        background: #d4edda;
+                        border: 1px solid #c3e6cb;
+                        color: #155724;
+                    }
+
+                    .custom-alert-error {
+                        background: #f8d7da;
+                        border: 1px solid #f5c6cb;
+                        color: #721c24;
+                    }
+
+                    .custom-alert-info {
+                        background: #d1ecf1;
+                        border: 1px solid #bee5eb;
+                        color: #0c5460;
+                    }
+
+                    .custom-alert-content {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 12px 16px;
+                    }
+
+                    .custom-alert-message {
+                        flex: 1;
+                        font-weight: 500;
+                    }
+
+                    .custom-alert-close {
+                        background: none;
+                        border: none;
+                        font-size: 18px;
+                        cursor: pointer;
+                        padding: 0;
+                        margin-left: 10px;
+                        opacity: 0.7;
+                        transition: opacity 0.2s ease;
+                    }
+
+                    .custom-alert-close:hover {
+                        opacity: 1;
+                    }
+
+                    @keyframes slideDown {
+                        from {
+                            transform: translateX(-50%) translateY(-100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(-50%) translateY(0);
+                            opacity: 1;
+                        }
+                    }
+
+                    @keyframes slideUp {
+                        from {
+                            transform: translateX(-50%) translateY(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(-50%) translateY(-100%);
+                            opacity: 0;
+                        }
+                    }
+
+                    @media (max-width: 768px) {
+                        .custom-alert {
+                            left: 20px;
+                            right: 20px;
+                            transform: none;
+                            min-width: auto;
+                        }
+                        
+                        @keyframes slideUp {
+                            from {
+                                transform: none;
+                                opacity: 1;
+                            }
+                            to {
+                                transform: translateY(-100%);
+                                opacity: 0;
+                            }
+                        }
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+
+            // Add to page
+            document.body.appendChild(alert);
+
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.style.animation = 'slideUp 0.3s ease';
+                    setTimeout(() => alert.remove(), 300);
+                }
+            }, 4000);
+
+            // Close button functionality
+            const closeBtn = alert.querySelector('.custom-alert-close');
+            closeBtn.addEventListener('click', () => {
+                alert.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }
+
+        // Start the timer on page load
+        startTimer();
+        
+        // Auto-focus first input
+        otpInputs[0].focus();
+    });
+</script>
+
+</body>
+</html>
