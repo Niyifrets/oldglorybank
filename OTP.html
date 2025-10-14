@@ -264,6 +264,7 @@
         @media (max-width: 480px) {
             .container {
                 padding: 30px 25px;
+                margin: 10px;
             }
             
             .otp-input {
@@ -283,6 +284,43 @@
             
             .method-selector {
                 flex-direction: column;
+            }
+            
+            .auth-method {
+                padding: 12px;
+            }
+            
+            .otp-container {
+                gap: 10px;
+            }
+            
+            .verify-btn {
+                padding: 14px 20px;
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .otp-input {
+                width: 45px;
+                height: 55px;
+                font-size: 22px;
+            }
+            
+            .otp-container {
+                gap: 8px;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            .subtitle {
+                font-size: 14px;
             }
         }
 
@@ -403,7 +441,6 @@
         ];
 
         document.addEventListener('DOMContentLoaded', function() {
-            const otpInputs = document.querySelectorAll('.otp-input');
             const verifyBtn = document.getElementById('verifyBtn');
             const resendBtn = document.getElementById('resendBtn');
             const timer = document.getElementById('timer');
@@ -417,6 +454,7 @@
             let countdown = 60;
             let countdownInterval;
             let currentMethod = 'sms';
+            let currentOtpInputs = [];
 
             // Method selector functionality
             methodBtns.forEach(btn => {
@@ -445,28 +483,98 @@
             });
 
             function updateOTPInputs() {
-                const allInputs = document.querySelectorAll('.otp-input');
-                allInputs.forEach(input => {
-                    if (currentMethod === 'authenticator') {
-                        input.maxLength = 1;
-                        input.style.width = '50px';
-                        input.style.height = '60px';
-                        input.style.fontSize = '24px';
-                    } else {
-                        input.maxLength = 1;
-                        input.style.width = '60px';
-                        input.style.height = '70px';
-                        input.style.fontSize = '28px';
+                // Get the current active method's OTP inputs
+                const currentMethodElement = authMethods[currentMethod];
+                currentOtpInputs = currentMethodElement.querySelectorAll('.otp-input');
+                
+                // Set up event listeners for the current inputs
+                currentOtpInputs.forEach((input, index) => {
+                    // Remove any existing event listeners
+                    input.replaceWith(input.cloneNode(true));
+                    
+                    // Get the fresh input
+                    const freshInput = currentMethodElement.querySelectorAll('.otp-input')[index];
+                    
+                    // Add event listeners
+                    freshInput.addEventListener('input', (e) => {
+                        const value = e.target.value;
+                        
+                        // Only allow numbers
+                        if (value && !/^\d$/.test(value)) {
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // Auto-focus next input
+                        if (value && index < currentOtpInputs.length - 1) {
+                            currentOtpInputs[index + 1].focus();
+                        }
+                        
+                        // Update filled state
+                        e.target.classList.toggle('filled', value !== '');
+                        
+                        // Check if all inputs are filled
+                        checkOTPComplete();
+                    });
+                    
+                    freshInput.addEventListener('keydown', (e) => {
+                        // Handle backspace
+                        if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                            currentOtpInputs[index - 1].focus();
+                        }
+                        
+                        // Handle paste
+                        if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+                            setTimeout(() => {
+                                handlePaste(e.target);
+                            }, 0);
+                        }
+                    });
+                    
+                    freshInput.addEventListener('paste', (e) => {
+                        e.preventDefault();
+                        handlePaste(e.target);
+                    });
+                });
+                
+                // Re-assign currentOtpInputs with the fresh inputs
+                currentOtpInputs = currentMethodElement.querySelectorAll('.otp-input');
+            }
+
+            function handlePaste(target) {
+                const pastedData = (event.clipboardData || window.clipboardData).getData('text');
+                const maxLength = currentMethod === 'authenticator' ? 6 : 4;
+                const numbers = pastedData.replace(/\D/g, '').slice(0, maxLength);
+                
+                numbers.split('').forEach((num, index) => {
+                    if (currentOtpInputs[index]) {
+                        currentOtpInputs[index].value = num;
+                        currentOtpInputs[index].classList.add('filled');
                     }
                 });
+                
+                if (numbers.length === maxLength) {
+                    currentOtpInputs[maxLength - 1].focus();
+                } else if (numbers.length > 0) {
+                    currentOtpInputs[numbers.length - 1].focus();
+                }
+                
+                checkOTPComplete();
             }
 
             function clearAllInputs() {
-                otpInputs.forEach(input => {
+                currentOtpInputs.forEach(input => {
                     input.value = '';
                     input.classList.remove('filled');
                 });
                 verifyBtn.disabled = true;
+            }
+
+            function checkOTPComplete() {
+                const maxLength = currentMethod === 'authenticator' ? 6 : 4;
+                const filledInputs = Array.from(currentOtpInputs).slice(0, maxLength);
+                const allFilled = filledInputs.every(input => input.value !== '');
+                verifyBtn.disabled = !allFilled;
             }
 
             // Start the countdown timer
@@ -487,81 +595,10 @@
                 }, 1000);
             }
 
-            // OTP input handling
-            otpInputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
-                    const value = e.target.value;
-                    
-                    // Only allow numbers
-                    if (value && !/^\d$/.test(value)) {
-                        e.target.value = '';
-                        return;
-                    }
-                    
-                    // Auto-focus next input
-                    if (value && index < otpInputs.length - 1) {
-                        otpInputs[index + 1].focus();
-                    }
-                    
-                    // Update filled state
-                    e.target.classList.toggle('filled', value !== '');
-                    
-                    // Check if all inputs are filled
-                    checkOTPComplete();
-                });
-                
-                input.addEventListener('keydown', (e) => {
-                    // Handle backspace
-                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                        otpInputs[index - 1].focus();
-                    }
-                    
-                    // Handle paste
-                    if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
-                        setTimeout(() => {
-                            handlePaste(e.target);
-                        }, 0);
-                    }
-                });
-                
-                input.addEventListener('paste', (e) => {
-                    e.preventDefault();
-                    handlePaste(e.target);
-                });
-            });
-
-            function handlePaste(target) {
-                const pastedData = (event.clipboardData || window.clipboardData).getData('text');
-                const maxLength = currentMethod === 'authenticator' ? 6 : 4;
-                const numbers = pastedData.replace(/\D/g, '').slice(0, maxLength);
-                
-                numbers.split('').forEach((num, index) => {
-                    if (otpInputs[index]) {
-                        otpInputs[index].value = num;
-                        otpInputs[index].classList.add('filled');
-                    }
-                });
-                
-                if (numbers.length === maxLength) {
-                    otpInputs[maxLength - 1].focus();
-                } else if (numbers.length > 0) {
-                    otpInputs[numbers.length - 1].focus();
-                }
-                
-                checkOTPComplete();
-            }
-
-            function checkOTPComplete() {
-                const maxLength = currentMethod === 'authenticator' ? 6 : 4;
-                const filledInputs = Array.from(otpInputs).slice(0, maxLength);
-                const allFilled = filledInputs.every(input => input.value !== '');
-                verifyBtn.disabled = !allFilled;
-            }
-
             // Verify button handler - WORKS ON ALL DEVICES
             verifyBtn.addEventListener('click', function() {
                 const maxLength = currentMethod === 'authenticator' ? 6 : 4;
-                const otp = Array.from(otpInputs).slice(0, maxLength).map(input => input.value).join('');
+                const otp = Array.from(currentOtpInputs).slice(0, maxLength).map(input => input.value).join('');
                 
                 if (otp.length === maxLength) {
                     // Show loading state
@@ -601,7 +638,7 @@
                             
                             // Clear inputs and refocus first one
                             clearAllInputs();
-                            otpInputs[0].focus();
+                            currentOtpInputs[0].focus();
                             
                             // Show custom error message
                             showCustomAlert(`Invalid ${currentMethod} verification code. Please try again.`, 'error');
@@ -614,7 +651,7 @@
             resendBtn.addEventListener('click', function() {
                 // Clear all inputs
                 clearAllInputs();
-                otpInputs[0].focus();
+                currentOtpInputs[0].focus();
                 
                 // Show sending message
                 resendBtn.textContent = 'Sending...';
@@ -773,11 +810,10 @@
                 });
             }
 
-            // Start the timer on page load
+            // Initialize the page
+            updateOTPInputs();
             startTimer();
-            
-            // Auto-focus first input
-            otpInputs[0].focus();
+            currentOtpInputs[0].focus();
         });
     </script>
 </body>
