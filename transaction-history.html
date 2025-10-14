@@ -436,7 +436,11 @@
 
     // Render transactions
     const txList = document.getElementById('txList');
-    transactions.forEach(tx => {
+    
+    // Sort transactions from newest to oldest
+    const sortedTransactions = [...transactions].reverse();
+    
+    sortedTransactions.forEach(tx => {
       const row = document.createElement('div');
       row.className = 'tx-row';
 
@@ -502,7 +506,7 @@
     searchInput.addEventListener('input', function() {
       const q = this.value.trim().toLowerCase();
       const rows = document.querySelectorAll('.tx-row');
-      transactions.forEach((tx, idx) => {
+      sortedTransactions.forEach((tx, idx) => {
         const row = rows[idx];
         const text = (tx.title + ' ' + tx.type + ' ' + tx.date).toLowerCase();
         row.style.display = text.includes(q) ? '' : 'none';
@@ -512,7 +516,7 @@
     // Accessibility: allow clicking menu to show an alert (dummy)
     document.querySelectorAll('.menu').forEach((m, i) => {
       m.addEventListener('click', () => {
-        alert('Transaction options (dummy) — ' + transactions[i].title);
+        alert('Transaction options (dummy) — ' + sortedTransactions[i].title);
       });
     });
 
