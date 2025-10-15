@@ -30,6 +30,21 @@
       -moz-osx-font-smoothing:grayscale;
     }
 
+    /* Account Restriction Banner */
+    .restriction-banner {
+      background: rgba(211, 52, 71, 0.95);
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 15px;
+      border-bottom: 1px solid rgba(180, 40, 55, 0.9);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 1000;
+      position: sticky;
+      top: 0;
+    }
+
     /* Top header */
     .topbar {
       background: #fff;
@@ -71,6 +86,7 @@
       display:flex;gap:22px;align-items:center;flex-wrap:wrap;
     }
     .subnav a { color:#163c6b;text-decoration:none;font-weight:600;font-size:15px; }
+    .subnav a:hover { color:#0f2a4d; }
 
     /* page container (white card area like screenshot) */
     .page {
@@ -253,35 +269,15 @@
       .tx-amount { text-align:left;margin-top:8px;display:block; }
       .totals { text-align:left; }
     }
-
-    /* Account Restriction Watermark */
-    .restriction-watermark {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-45deg);
-      font-size: 25px;
-      font-weight: 800;
-      color: rgba(211, 52, 71, 0.15);
-      z-index: 999;
-      pointer-events: none;
-      text-align: center;
-      white-space: nowrap;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      user-select: none;
-    }
-
-    .restriction-watermark::before {
-      content: "Account Under Review - Contact Customer Support";
-    }
-
   </style>
 </head>
 <body>
 
-  <!-- Account Restriction Watermark -->
-  <div class="restriction-watermark"></div>
+  <!-- Account Restriction Banner -->
+  <div class="restriction-banner">
+    <span class="warning-icon">⚠️</span>
+    ACCOUNT UNDER REVIEW - All transactions may be temporarily restricted. Contact Customer Support for assistance.
+  </div>
 
   <!-- Top header -->
   <div class="topbar">
@@ -310,7 +306,7 @@
       <a href="#">Settings</a>
       <a href="#">Messages <span style="background:#2b2b2b;color:#fff;border-radius:50%;padding:2px 6px;margin-left:8px;font-size:12px">2</span></a>
       <a href="#">Old Glory Nation</a>
-      <a href="#">Log Off</a>
+      <a href="#" id="logOffLink">Log Off</a>
     </div>
   </div>
 
@@ -451,6 +447,105 @@
       return input.replace(/[<>]/g, '').trim();
     };
 
+    // Helper function to add days to a date
+    function addDays(date, days) {
+      const result = new Date(date);
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    // Helper function to format date as "MMM DD, YYYY" with leading zero
+    function formatDate(date) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${months[date.getMonth()]} ${day}, ${date.getFullYear()}`;
+    }
+
+    // Generate random transactions between June 30, 2024 and July 07, 2025
+    function generateRandomTransactions() {
+      const startDate = new Date('2024-06-30');
+      const endDate = new Date('2025-07-07');
+      const transactions = [];
+      
+      let currentDate = new Date(startDate);
+      let currentBalance = 8503500.00; // Starting balance from June 30, 2024
+      
+      // Business-related transaction descriptions
+      const incomeDescriptions = [
+        "Client Payment - Project Completion",
+        "Consulting Fee - Q3 Services",
+        "Contract Milestone - Tech Division",
+        "Investment Return - Capital Fund",
+        "Vendor Rebate - Annual Program",
+        "Service Revenue - Maintenance Contract",
+        "License Fee - Software Platform",
+        "Royalty Payment - IP Licensing"
+      ];
+      
+      const expenseDescriptions = [
+        "Office Supplies - Monthly Order",
+        "Utility Payment - Electricity/Water",
+        "Software Subscription - Cloud Services",
+        "Marketing Expense - Digital Campaign",
+        "Travel Reimbursement - Business Trip",
+        "Professional Fees - Legal Services",
+        "Equipment Maintenance - IT Infrastructure",
+        "Insurance Premium - Business Policy"
+      ];
+      
+      // Generate transactions with 1-2 day intervals
+      while (currentDate <= endDate) {
+        // Randomly decide if this will be an income or expense transaction
+        const isIncome = Math.random() > 0.6; // 40% chance of income, 60% chance of expense
+        
+        if (isIncome) {
+          // Generate income transaction
+          const amount = Math.round((Math.random() * 150000 + 50000) * 100) / 100; // $50,000 - $200,000
+          currentBalance += amount;
+          transactions.push({
+            date: formatDate(currentDate),
+            title: incomeDescriptions[Math.floor(Math.random() * incomeDescriptions.length)],
+            type: "Income",
+            amount: amount,
+            balance: currentBalance
+          });
+        } else {
+          // Generate expense transaction
+          const amount = Math.round((Math.random() * 80000 + 20000) * 100) / 100; // $20,000 - $100,000
+          currentBalance -= amount;
+          transactions.push({
+            date: formatDate(currentDate),
+            title: expenseDescriptions[Math.floor(Math.random() * expenseDescriptions.length)],
+            type: "Transfer",
+            amount: -amount,
+            balance: currentBalance
+          });
+        }
+        
+        // Move to next date (1-2 days later)
+        const daysToAdd = Math.random() > 0.5 ? 1 : 2;
+        currentDate = addDays(currentDate, daysToAdd);
+      }
+      
+      return transactions;
+    }
+
+    // Logout function
+    function handleLogout() {
+      // Clear session storage
+      sessionStorage.removeItem('otpVerified');
+      sessionStorage.removeItem('verifiedAt');
+      sessionStorage.removeItem('csrfToken');
+      
+      // Show logout message
+      showSecurityAlert('You have been successfully logged out.');
+      
+      // Redirect to login page after delay
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1500);
+    }
+
     // Transaction data with additional transactions starting from March 13, 2024
     const transactions = [
       // New transactions from March 13, 2024
@@ -481,6 +576,9 @@
       { date: "Jun 20, 2024", title: "Payroll Processing - Q2 2024", type: "Transfer", amount: -512000.00, balance: 8065500.00 },
       { date: "Jun 25, 2024", title: "Business Insurance Premium", type: "Transfer", amount: -187000.00, balance: 7878500.00 },
       { date: "Jun 30, 2024", title: "Quarterly Performance Bonus", type: "Income", amount: 625000.00, balance: 8503500.00 },
+
+      // Add generated random transactions between June 30, 2024 and July 07, 2025
+      ...generateRandomTransactions(),
 
       // Original transactions (kept for continuity)
       { date: "Jul 07, 2025", title: "Payment to Atlas Engineering Co.", type: "Transfer", amount: -320000.00, balance: 8183500.00 },
@@ -629,6 +727,13 @@
         m.addEventListener('click', () => {
           alert('Transaction options (dummy) — ' + sortedTransactions[i].title);
         });
+      });
+
+      // Add logout functionality
+      const logOffLink = document.getElementById('logOffLink');
+      logOffLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        handleLogout();
       });
     }
 
