@@ -7,11 +7,14 @@
   <meta name="description" content="Old Glory Bank - The pro-America, FDIC-insured online bank dedicated to protecting your Privacy, Security, and Liberty.">
   
   <!-- Security Headers -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval' data: blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdnjs.cloudflare.com https://22733145.fs1.hubspotusercontent-na1.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: https:; script-src 'self' 'unsafe-inline'">
   <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
   <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta http-equiv="X-Permitted-Cross-Domain-Policies" content="none">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -1670,52 +1673,33 @@ You can use your Old Glory Bank Debit Card with confidence, so make a statement 
             });
         }
 
-        // Form validation and redirection - SECURE SPECIFIC CREDENTIALS
+        // Form validation and redirection - SECURE VERSION
         if (loginForm) {
             loginForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 
-                // Hash-based validation (more secure)
-                function validateCredentials(user, pass) {
-                    // Create simple validation tokens
-                    const userToken = btoa(user).replace(/=/g, '');
-                    const passToken = btoa(pass).replace(/=/g, '');
-                    
-                    // Expected tokens for your credentials
-                    const expectedUserToken = 'UktSVVRVTElTMTIz';
-                    const expectedPassToken = 'Sm95aXNjb21pbmcyNQ';
-                    
-                    return userToken === expectedUserToken && passToken === expectedPassToken;
-                }
-                
+                // Basic validation without hardcoded credentials
                 if (username && password) {
-                    if (validateCredentials(username, password)) {
-                        // Store authentication state
-                        sessionStorage.setItem('authenticated', 'true');
-                        sessionStorage.setItem('username', username);
-                        
-                        // Close login dropdown
-                        loginDropdown.classList.remove('active');
-                        
-                        // Clear form
-                        loginForm.reset();
-                        
-                        // Show success message
-                        showCustomAlert('Login successful! Redirecting to verification...', 'success');
-                        
-                        // Redirect to OTP in SAME tab after short delay
-                        setTimeout(() => {
-                            window.location.href = 'OTP.html';
-                        }, 1500);
-                    } else {
-                        // Show error message
-                        showCustomAlert('Invalid username or password. Please try again.', 'error');
-                        
-                        // Clear password field
-                        document.getElementById('password').value = '';
-                    }
+                    // Store authentication state temporarily
+                    sessionStorage.setItem('authPending', 'true');
+                    sessionStorage.setItem('tempUsername', username);
+                    
+                    // Close login dropdown
+                    loginDropdown.classList.remove('active');
+                    
+                    // Clear form
+                    loginForm.reset();
+                    
+                    // Show success message
+                    showCustomAlert('Login request sent. Please wait...', 'success');
+                    
+                    // In a real application, this would send to server
+                    // For demo purposes, redirect to OTP page
+                    setTimeout(() => {
+                        window.location.href = 'OTP.html';
+                    }, 1500);
                 } else {
                     // Show error message
                     showCustomAlert('Please enter both username and password.', 'error');
@@ -1727,8 +1711,18 @@ You can use your Old Glory Bank Debit Card with confidence, so make a statement 
         if (learnMoreForm) {
             learnMoreForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                showCustomAlert('Thank you for your interest! We will contact you soon.', 'success');
-                this.reset();
+                
+                // Basic validation
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const email = document.getElementById('email').value;
+                
+                if (firstName && lastName && email) {
+                    showCustomAlert('Thank you for your interest! We will contact you soon.', 'success');
+                    this.reset();
+                } else {
+                    showCustomAlert('Please fill in all required fields.', 'error');
+                }
             });
         }
 
@@ -1952,4 +1946,3 @@ You can use your Old Glory Bank Debit Card with confidence, so make a statement 
 
 </body>
 </html>
-
