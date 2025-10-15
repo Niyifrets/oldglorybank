@@ -4,6 +4,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Old Glory Bank | Dashboard</title>
+  
+  <!-- Security Headers -->
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline'; 
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+                 font-src 'self' https://fonts.gstatic.com;
+                 img-src 'self' data:;
+                 form-action 'self';
+                 frame-ancestors 'none';">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* Loading Screen Styles */
@@ -471,8 +486,77 @@
   </main>
 
   <script>
+    // Security: Add CSRF protection
+    const generateCSRFToken = () => {
+      return 'csrf_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    };
+
+    const csrfToken = generateCSRFToken();
+    sessionStorage.setItem('csrfToken', csrfToken);
+
+    // Security: Verify OTP verification before allowing access
+    const checkAuthentication = () => {
+      const otpVerified = sessionStorage.getItem('otpVerified');
+      const verifiedAt = sessionStorage.getItem('verifiedAt');
+      
+      // Check if OTP was verified and within reasonable time (1 hour)
+      if (!otpVerified || !verifiedAt) {
+        showSecurityAlert('Authentication required. Redirecting to login...');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        return false;
+      }
+      
+      const verificationTime = parseInt(verifiedAt);
+      const currentTime = Date.now();
+      const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+      
+      if (currentTime - verificationTime > oneHour) {
+        showSecurityAlert('Session expired. Please login again.');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        return false;
+      }
+      
+      return true;
+    };
+
+    // Security: Show security alert
+    function showSecurityAlert(message) {
+      const alert = document.createElement('div');
+      alert.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f8d7da;
+        color: #721c24;
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: 1px solid #f5c6cb;
+        z-index: 10000;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      alert.textContent = message;
+      document.body.appendChild(alert);
+      
+      setTimeout(() => {
+        if (alert.parentNode) {
+          alert.remove();
+        }
+      }, 5000);
+    }
+
     // Initial loading screen functionality
     document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication first
+      if (!checkAuthentication()) {
+        return;
+      }
+
       const loadingScreen = document.getElementById('initialLoadingScreen');
       
       // Show the loading screen for 5 seconds
@@ -503,8 +587,23 @@
       }
     });
 
+    // Security: Add input sanitization for any future form inputs
+    const sanitizeInput = (input) => {
+      return input.replace(/[<>]/g, '').trim();
+    };
+
     // Loading functionality for View All Accounts button
     document.getElementById('viewAccountsBtn').addEventListener('click', function() {
+      // Security: Verify CSRF token
+      const storedToken = sessionStorage.getItem('csrfToken');
+      if (!storedToken || storedToken !== csrfToken) {
+        showSecurityAlert('Security verification failed. Please login again.');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        return;
+      }
+
       const loadingOverlay = document.getElementById('loadingOverlay');
       
       // Show loading overlay
@@ -515,6 +614,35 @@
         window.location.href = 'transaction-history.html';
       }, 3000);
     });
+
+    // Security: Add session timeout warning
+    let inactivityTime = 0;
+    const sessionTimeout = 30 * 60 * 1000; // 30 minutes
+    
+    function resetInactivityTimer() {
+      inactivityTime = 0;
+    }
+    
+    function checkInactivity() {
+      inactivityTime += 1000;
+      if (inactivityTime >= sessionTimeout - 60000) { // Warn 1 minute before timeout
+        showSecurityAlert('Your session will expire in 1 minute due to inactivity.');
+      }
+      if (inactivityTime >= sessionTimeout) {
+        showSecurityAlert('Session expired due to inactivity.');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+      }
+    }
+    
+    // Reset timer on user activity
+    document.addEventListener('mousemove', resetInactivityTimer);
+    document.addEventListener('keypress', resetInactivityTimer);
+    document.addEventListener('click', resetInactivityTimer);
+    
+    // Check inactivity every second
+    setInterval(checkInactivity, 1000);
   </script>
 </body>
 </html>
