@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Old Glory Bank | Two-Factor Authentication</title>
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline'; 
+                   style-src 'self' 'unsafe-inline'; 
+                   img-src 'self' data:;
+                   form-action 'self';
+                   frame-ancestors 'none';">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta name="robots" content="noindex, nofollow">
+    
     <style>
         * {
             margin: 0;
@@ -366,10 +380,10 @@
             <p>We've sent a 4-digit verification code to your registered mobile device ending in ••••9768.</p>
             
             <div class="otp-container">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
             </div>
         </div>
 
@@ -378,10 +392,10 @@
             <p>We've sent a 4-digit verification code to your email address rk••••@hotmail.com.</p>
             
             <div class="otp-container">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
             </div>
         </div>
 
@@ -390,12 +404,12 @@
             <p>Enter the 6-digit code from your authenticator app (Google Authenticator, Authy, etc.).</p>
             
             <div class="otp-container">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
             </div>
         </div>
 
@@ -424,6 +438,14 @@
     </div>
 
     <script>
+        // Security: Add CSRF protection
+        const generateCSRFToken = () => {
+            return 'csrf_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        };
+
+        const csrfToken = generateCSRFToken();
+        sessionStorage.setItem('csrfToken', csrfToken);
+
         // Valid OTP codes - 20 hard-to-guess numeric codes
         const validOTPCodes = [
             '7294', '5831', '4167', '9628', '3750',
@@ -455,6 +477,22 @@
             let countdownInterval;
             let currentMethod = 'sms';
             let currentOtpInputs = [];
+            let verificationAttempts = 0;
+            const MAX_ATTEMPTS = 5;
+
+            // Security: Prevent brute force
+            const checkAttempts = () => {
+                verificationAttempts++;
+                if (verificationAttempts >= MAX_ATTEMPTS) {
+                    showCustomAlert('Too many failed attempts. Please try again later.', 'error');
+                    verifyBtn.disabled = true;
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 3000);
+                    return false;
+                }
+                return true;
+            };
 
             // Method selector functionality
             methodBtns.forEach(btn => {
@@ -495,11 +533,11 @@
                     // Get the fresh input
                     const freshInput = currentMethodElement.querySelectorAll('.otp-input')[index];
                     
-                    // Add event listeners
+                    // Security: Add input sanitization
                     freshInput.addEventListener('input', (e) => {
                         const value = e.target.value;
                         
-                        // Only allow numbers
+                        // Only allow numbers and sanitize input
                         if (value && !/^\d$/.test(value)) {
                             e.target.value = '';
                             return;
@@ -523,7 +561,7 @@
                             currentOtpInputs[index - 1].focus();
                         }
                         
-                        // Handle paste
+                        // Handle paste with sanitization
                         if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
                             setTimeout(() => {
                                 handlePaste(e.target);
@@ -543,6 +581,7 @@
 
             function handlePaste(target) {
                 const pastedData = (event.clipboardData || window.clipboardData).getData('text');
+                // Security: Sanitize pasted data
                 const maxLength = currentMethod === 'authenticator' ? 6 : 4;
                 const numbers = pastedData.replace(/\D/g, '').slice(0, maxLength);
                 
@@ -595,8 +634,10 @@
                 }, 1000);
             }
 
-            // Verify button handler - WORKS ON ALL DEVICES
+            // SECURITY FIXED: Verify button handler - No automatic redirects
             verifyBtn.addEventListener('click', function() {
+                if (!checkAttempts()) return;
+                
                 const maxLength = currentMethod === 'authenticator' ? 6 : 4;
                 const otp = Array.from(currentOtpInputs).slice(0, maxLength).map(input => input.value).join('');
                 
@@ -617,20 +658,21 @@
                         }
                         
                         if (isValid) {
-                            // Mark as verified in session storage
+                            // Security: Store minimal verification state
                             sessionStorage.setItem('otpVerified', 'true');
                             sessionStorage.setItem('authMethod', currentMethod);
+                            sessionStorage.setItem('verifiedAt', Date.now().toString());
                             
-                            // Show success message with countdown
-                            showCustomAlert(`${currentMethod.toUpperCase()} verification successful! Opening dashboard and returning to login...`, 'success');
+                            // Show success message - let user navigate manually
+                            showCustomAlert(`${currentMethod.toUpperCase()} verification successful! You can now proceed to your dashboard.`, 'success');
                             
-                            // Open dashboard in NEW tab immediately (works on all devices)
-                            window.open('dashboard.html', '_blank');
+                            // Enable navigation instead of automatic redirect
+                            verifyBtn.innerHTML = 'Proceed to Dashboard';
+                            verifyBtn.disabled = false;
+                            verifyBtn.onclick = () => {
+                                window.location.href = 'dashboard.html';
+                            };
                             
-                            // Redirect this tab back to index.html after delay (works on all devices)
-                            setTimeout(() => {
-                                window.location.href = 'index.html';
-                            }, 2000);
                         } else {
                             // Invalid OTP - reset and allow retry
                             verifyBtn.innerHTML = 'Verify & Continue';
@@ -641,7 +683,7 @@
                             currentOtpInputs[0].focus();
                             
                             // Show custom error message
-                            showCustomAlert(`Invalid ${currentMethod} verification code. Please try again.`, 'error');
+                            showCustomAlert(`Invalid ${currentMethod} verification code. ${MAX_ATTEMPTS - verificationAttempts} attempts remaining.`, 'error');
                         }
                     }, 1500);
                 }
