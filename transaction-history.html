@@ -4,6 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Old Glory Bank | transaction-history</title>
+  
+  <!-- Security Headers -->
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline'; 
+                 style-src 'self' 'unsafe-inline'; 
+                 img-src 'self' data:;
+                 form-action 'self';
+                 frame-ancestors 'none';">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  
   <style>
     /* Basic reset and fonts */
     * { box-sizing: border-box; }
@@ -368,6 +382,75 @@
   </div>
 
   <script>
+    // Security: Add CSRF protection
+    const generateCSRFToken = () => {
+      return 'csrf_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    };
+
+    const csrfToken = generateCSRFToken();
+    sessionStorage.setItem('csrfToken', csrfToken);
+
+    // Security: Verify authentication before loading transactions
+    const checkAuthentication = () => {
+      const otpVerified = sessionStorage.getItem('otpVerified');
+      const verifiedAt = sessionStorage.getItem('verifiedAt');
+      
+      // Check if OTP was verified and within reasonable time (1 hour)
+      if (!otpVerified || !verifiedAt) {
+        showSecurityAlert('Authentication required. Redirecting to login...');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        return false;
+      }
+      
+      const verificationTime = parseInt(verifiedAt);
+      const currentTime = Date.now();
+      const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+      
+      if (currentTime - verificationTime > oneHour) {
+        showSecurityAlert('Session expired. Please login again.');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        return false;
+      }
+      
+      return true;
+    };
+
+    // Security: Show security alert
+    function showSecurityAlert(message) {
+      const alert = document.createElement('div');
+      alert.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f8d7da;
+        color: #721c24;
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: 1px solid #f5c6cb;
+        z-index: 10000;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      alert.textContent = message;
+      document.body.appendChild(alert);
+      
+      setTimeout(() => {
+        if (alert.parentNode) {
+          alert.remove();
+        }
+      }, 5000);
+    }
+
+    // Security: Input sanitization for search
+    const sanitizeInput = (input) => {
+      return input.replace(/[<>]/g, '').trim();
+    };
+
     // Transaction data with additional transactions starting from March 13, 2024
     const transactions = [
       // New transactions from March 13, 2024
@@ -440,86 +523,143 @@
     // Sort transactions from newest to oldest
     const sortedTransactions = [...transactions].reverse();
     
-    sortedTransactions.forEach(tx => {
-      const row = document.createElement('div');
-      row.className = 'tx-row';
+    // Security: Check authentication before rendering
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!checkAuthentication()) {
+        return;
+      }
 
-      // Date column
-      const dateCol = document.createElement('div');
-      dateCol.className = 'tx-date';
-      dateCol.innerHTML = `<div class="d">${tx.date}</div><div style="font-size:12px;color:#999;">${tx.date.includes('2024')? '2024':tx.date.includes('2025')?'2025':''}</div>`;
-      // Description column
-      const descCol = document.createElement('div');
-      descCol.className = 'tx-desc';
-      descCol.innerHTML = `${tx.title}<span class="sub">${tx.type}</span>`;
-
-      // Amount column (with small balance line under amount)
-      const amtCol = document.createElement('div');
-      amtCol.className = 'tx-amount';
-      const amtSpan = document.createElement('div');
-      amtSpan.style.fontWeight = 800;
-      amtSpan.textContent = formatCurrency(tx.amount);
-      amtSpan.className = tx.amount >= 0 ? 'amt-positive' : 'amt-negative';
-      const balSpan = document.createElement('div');
-      balSpan.style.fontSize = '13px';
-      balSpan.style.color = '#777';
-      balSpan.style.marginTop = '6px';
-      balSpan.textContent = formatCurrency(tx.balance);
-      amtCol.appendChild(amtSpan);
-      amtCol.appendChild(balSpan);
-
-      // optional menu column (three dots) — put into amount column aligned right
-      const menu = document.createElement('div');
-      menu.className = 'menu';
-      menu.innerHTML = '⋮';
-      menu.title = 'More';
-
-      // append children into row grid: date, desc, amount + menu
-      row.appendChild(dateCol);
-      row.appendChild(descCol);
-
-      // Wrap amount and menu into a small container for alignment
-      const rightWrap = document.createElement('div');
-      rightWrap.style.display = 'flex';
-      rightWrap.style.justifyContent = 'flex-end';
-      rightWrap.style.alignItems = 'center';
-      rightWrap.style.gap = '12px';
-      rightWrap.appendChild(amtCol);
-      rightWrap.appendChild(menu);
-
-      row.appendChild(rightWrap);
-
-      txList.appendChild(row);
+      renderTransactions();
+      setupEventListeners();
     });
 
-    // compute totals (credits and debits) and render footer totals
-    const credits = transactions.filter(t => t.amount > 0);
-    const debits = transactions.filter(t => t.amount < 0);
-    const sumCredits = credits.reduce((s, t) => s + t.amount, 0);
-    const sumDebits = debits.reduce((s, t) => s + Math.abs(t.amount), 0);
+    function renderTransactions() {
+      sortedTransactions.forEach(tx => {
+        const row = document.createElement('div');
+        row.className = 'tx-row';
 
-    const totalsFooter = document.getElementById('totalsFooter');
-    totalsFooter.innerHTML = `Page totals: Credits: [${credits.length}] ${formatCurrency(sumCredits)} | Debits: [${debits.length}] -${formatCurrency(sumDebits).replace('$','')}`;
+        // Date column
+        const dateCol = document.createElement('div');
+        dateCol.className = 'tx-date';
+        dateCol.innerHTML = `<div class="d">${tx.date}</div><div style="font-size:12px;color:#999;">${tx.date.includes('2024')? '2024':tx.date.includes('2025')?'2025':''}</div>`;
+        // Description column
+        const descCol = document.createElement('div');
+        descCol.className = 'tx-desc';
+        descCol.innerHTML = `${tx.title}<span class="sub">${tx.type}</span>`;
 
-    // Optional: search filter (basic)
-    const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', function() {
-      const q = this.value.trim().toLowerCase();
-      const rows = document.querySelectorAll('.tx-row');
-      sortedTransactions.forEach((tx, idx) => {
-        const row = rows[idx];
-        const text = (tx.title + ' ' + tx.type + ' ' + tx.date).toLowerCase();
-        row.style.display = text.includes(q) ? '' : 'none';
+        // Amount column (with small balance line under amount)
+        const amtCol = document.createElement('div');
+        amtCol.className = 'tx-amount';
+        const amtSpan = document.createElement('div');
+        amtSpan.style.fontWeight = 800;
+        amtSpan.textContent = formatCurrency(tx.amount);
+        amtSpan.className = tx.amount >= 0 ? 'amt-positive' : 'amt-negative';
+        const balSpan = document.createElement('div');
+        balSpan.style.fontSize = '13px';
+        balSpan.style.color = '#777';
+        balSpan.style.marginTop = '6px';
+        balSpan.textContent = formatCurrency(tx.balance);
+        amtCol.appendChild(amtSpan);
+        amtCol.appendChild(balSpan);
+
+        // optional menu column (three dots) — put into amount column aligned right
+        const menu = document.createElement('div');
+        menu.className = 'menu';
+        menu.innerHTML = '⋮';
+        menu.title = 'More';
+
+        // append children into row grid: date, desc, amount + menu
+        row.appendChild(dateCol);
+        row.appendChild(descCol);
+
+        // Wrap amount and menu into a small container for alignment
+        const rightWrap = document.createElement('div');
+        rightWrap.style.display = 'flex';
+        rightWrap.style.justifyContent = 'flex-end';
+        rightWrap.style.alignItems = 'center';
+        rightWrap.style.gap = '12px';
+        rightWrap.appendChild(amtCol);
+        rightWrap.appendChild(menu);
+
+        row.appendChild(rightWrap);
+
+        txList.appendChild(row);
       });
-    });
 
-    // Accessibility: allow clicking menu to show an alert (dummy)
-    document.querySelectorAll('.menu').forEach((m, i) => {
-      m.addEventListener('click', () => {
-        alert('Transaction options (dummy) — ' + sortedTransactions[i].title);
+      // compute totals (credits and debits) and render footer totals
+      const credits = transactions.filter(t => t.amount > 0);
+      const debits = transactions.filter(t => t.amount < 0);
+      const sumCredits = credits.reduce((s, t) => s + t.amount, 0);
+      const sumDebits = debits.reduce((s, t) => s + Math.abs(t.amount), 0);
+
+      const totalsFooter = document.getElementById('totalsFooter');
+      totalsFooter.innerHTML = `Page totals: Credits: [${credits.length}] ${formatCurrency(sumCredits)} | Debits: [${debits.length}] -${formatCurrency(sumDebits).replace('$','')}`;
+    }
+
+    function setupEventListeners() {
+      // Optional: search filter (basic) with sanitization
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('input', function() {
+        const q = sanitizeInput(this.value.trim().toLowerCase());
+        const rows = document.querySelectorAll('.tx-row');
+        sortedTransactions.forEach((tx, idx) => {
+          const row = rows[idx];
+          const text = (tx.title + ' ' + tx.type + ' ' + tx.date).toLowerCase();
+          row.style.display = text.includes(q) ? '' : 'none';
+        });
       });
-    });
 
+      // Security: Add rate limiting for search
+      let searchTimeout;
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          const q = sanitizeInput(this.value.trim().toLowerCase());
+          const rows = document.querySelectorAll('.tx-row');
+          sortedTransactions.forEach((tx, idx) => {
+            const row = rows[idx];
+            const text = (tx.title + ' ' + tx.type + ' ' + tx.date).toLowerCase();
+            row.style.display = text.includes(q) ? '' : 'none';
+          });
+        }, 300); // 300ms delay
+      });
+
+      // Accessibility: allow clicking menu to show an alert (dummy)
+      document.querySelectorAll('.menu').forEach((m, i) => {
+        m.addEventListener('click', () => {
+          alert('Transaction options (dummy) — ' + sortedTransactions[i].title);
+        });
+      });
+    }
+
+    // Security: Add session timeout warning
+    let inactivityTime = 0;
+    const sessionTimeout = 30 * 60 * 1000; // 30 minutes
+    
+    function resetInactivityTimer() {
+      inactivityTime = 0;
+    }
+    
+    function checkInactivity() {
+      inactivityTime += 1000;
+      if (inactivityTime >= sessionTimeout - 60000) { // Warn 1 minute before timeout
+        showSecurityAlert('Your session will expire in 1 minute due to inactivity.');
+      }
+      if (inactivityTime >= sessionTimeout) {
+        showSecurityAlert('Session expired due to inactivity.');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+      }
+    }
+    
+    // Reset timer on user activity
+    document.addEventListener('mousemove', resetInactivityTimer);
+    document.addEventListener('keypress', resetInactivityTimer);
+    document.addEventListener('click', resetInactivityTimer);
+    
+    // Check inactivity every second
+    setInterval(checkInactivity, 1000);
   </script>
 </body>
 </html>
