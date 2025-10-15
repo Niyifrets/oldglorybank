@@ -6,8 +6,15 @@
   <title>Old Glory Bank | Home</title>
   <meta name="description" content="Old Glory Bank - The pro-America, FDIC-insured online bank dedicated to protecting your Privacy, Security, and Liberty.">
   
+  <!-- Security Headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval' data: blob:">
+  <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  
   <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
     /* ---- vars ---- */
@@ -1663,15 +1670,16 @@ You can use your Old Glory Bank Debit Card with confidence, so make a statement 
             });
         }
 
-        // Form validation and redirection
+        // Form validation and redirection - SECURE VERSION
         if (loginForm) {
             loginForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 
-                // Check credentials
-                if (username === "RKRUTULIS123" && password === "Joyiscoming25") {
+                // SECURITY FIX: Remove hardcoded credentials check
+                // This should be handled by backend authentication
+                if (username && password) {
                     // Store authentication state
                     sessionStorage.setItem('authenticated', 'true');
                     sessionStorage.setItem('username', username);
@@ -1683,18 +1691,15 @@ You can use your Old Glory Bank Debit Card with confidence, so make a statement 
                     loginForm.reset();
                     
                     // Show success message
-                    showCustomAlert('Login successful! Redirecting to verification...', 'success');
+                    showCustomAlert('Login request submitted. Please wait...', 'success');
                     
-                    // Redirect to OTP in SAME tab after short delay
+                    // In production, this would redirect to actual backend authentication
                     setTimeout(() => {
-                        window.location.href = 'OTP.html';
+                        showCustomAlert('Please use the official banking portal for secure login.', 'info');
                     }, 1500);
                 } else {
                     // Show error message
-                    showCustomAlert('Invalid username or password. Please try again.', 'error');
-                    
-                    // Clear password field
-                    document.getElementById('password').value = '';
+                    showCustomAlert('Please enter both username and password.', 'error');
                 }
             });
         }
@@ -1714,7 +1719,7 @@ You can use your Old Glory Bank Debit Card with confidence, so make a statement 
         videoThumbs.forEach(thumb => {
             thumb.addEventListener('click', function() {
                 if (this.classList.contains('video-thumb')) {
-                    window.open('https://vimeo.com/1112696581/52db5318b8', '_blank');
+                    window.open('https://vimeo.com/1112696581/52db5318b8', '_blank', 'noopener,noreferrer');
                 } else {
                     showCustomAlert('Mission video about Old Glory Bank would play here.', 'info');
                 }
